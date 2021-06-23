@@ -114,14 +114,16 @@ def recognizer_predict(model, converter, test_loader, batch_max_length,\
             preds_size = torch.IntTensor([preds.size(1)] * batch_size)
 
             ######## filter ignore_char, rebalance
-            preds_prob = F.softmax(preds, dim=2)
-            preds_prob = preds_prob.cpu().detach().numpy()
+            preds_softmax = F.softmax(preds, dim=2)
+            preds_prob = preds_softmax.cpu().detach().numpy()
             preds_prob[:,:,ignore_idx] = 0.
             pred_norm = preds_prob.sum(axis=2)
             preds_prob = preds_prob/np.expand_dims(pred_norm, axis=-1)
             preds_prob = torch.from_numpy(preds_prob).float().to(device)
 
-            if decoder == 'greedy':
+            if decoder == 'softmax':
+                preds_str = preds_softmax
+            elif decoder == 'greedy':
                 # Select max probabilty (greedy decoding) then decode index to character
                 _, preds_index = preds_prob.max(2)
                 preds_index = preds_index.view(-1)
@@ -143,6 +145,7 @@ def recognizer_predict(model, converter, test_loader, batch_max_length,\
                     preds_max_prob.append(max_probs)
                 else:
                     preds_max_prob.append(np.array([0]))
+            
 
             for pred, pred_max_prob in zip(preds_str, preds_max_prob):
                 confidence_score = custom_mean(pred_max_prob)

@@ -562,6 +562,8 @@ def get_image_list(horizontal_list, free_list, img, model_height = 64, sort_outp
         crop_img = img[y_min : y_max, x_min:x_max]
         width = x_max - x_min
         height = y_max - y_min
+        if width<0 or height<0:
+            continue
         ratio = calculate_ratio(width,height)
         new_width = int(model_height*ratio)
         if new_width == 0:
