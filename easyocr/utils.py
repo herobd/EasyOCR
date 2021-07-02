@@ -718,12 +718,17 @@ def reformat_input(image):
             img = image[:,:,:3]
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            raise ValueError('Invalid input shape: {}'.format(image.shape))
     elif type(image) == JpegImagePlugin.JpegImageFile:
         image_array = np.array(image)
         img = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
         img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     else:
         raise ValueError('Invalid input type. Suppoting format = string(file path or url), bytes, numpy array')
+    #elif type(image) == torch.Tensor:
+    #    if len(img.size()) == 2: #grayscale
+    #        img_cv_gray
 
     return img, img_cv_grey
 

@@ -123,7 +123,7 @@ def recognizer_predict(model, converter, test_loader, batch_max_length,\
 
             if decoder == 'softmax':
                 preds_str = preds_softmax
-            elif decoder == 'greedy':
+            elif decoder == 'greedy' or decoder == 'greedy+softmax':
                 # Select max probabilty (greedy decoding) then decode index to character
                 _, preds_index = preds_prob.max(2)
                 preds_index = preds_index.view(-1)
@@ -134,6 +134,11 @@ def recognizer_predict(model, converter, test_loader, batch_max_length,\
             elif decoder == 'wordbeamsearch':
                 k = preds_prob.cpu().detach().numpy()
                 preds_str = converter.decode_wordbeamsearch(k, beamWidth=beamWidth)
+            else:
+                raise NotImplementedError('unknown decoder: {}'.format(decoder))
+
+            #if decoder == 'greedy+softmax':
+            #    preds_str = (preds_str,preds_softmax)
 
             preds_prob = preds_prob.cpu().detach().numpy()
             values = preds_prob.max(axis=2)
@@ -147,8 +152,10 @@ def recognizer_predict(model, converter, test_loader, batch_max_length,\
                     preds_max_prob.append(np.array([0]))
             
 
-            for pred, pred_max_prob in zip(preds_str, preds_max_prob):
+            for i,(pred, pred_max_prob) in enumerate(zip(preds_str, preds_max_prob)):
                 confidence_score = custom_mean(pred_max_prob)
+                if 'softmax' in decoder:
+                    pred=(pred,preds_softmax[i])
                 result.append([pred, confidence_score])
 
     return result
@@ -181,8 +188,11 @@ def get_recognizer(recog_network, network_params, character,\
             except:
                 pass
     else:
-        model = torch.nn.DataParallel(model).to(device)
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        #model = torch.nn.DataParallel(model).to(device)
+        model = model.to(device)
+        state_dict = torch.load(model_path, map_location=device)
+        state_dict = {k[7:]:v for k,v in state_dict.items()}
+        model.load_state_dict(state_dict)
 
     return model, converter
 
